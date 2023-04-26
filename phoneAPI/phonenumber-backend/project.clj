@@ -7,7 +7,9 @@
                  [com.appsflyer/donkey  "0.5.2"]
                  [metosin/reitit        "0.6.0"]
                  [metosin/muuntaja      "0.6.8"]
-                 [org.clojure/data.json "2.4.0"]]
+                 [org.clojure/data.json "2.4.0"]
+                 [ring-cors            "0.1.13"]]
+  :uberjar-name "my-project.jar"
   :plugins [[lein-auto "0.1.3"]]
   :main ^:skip-aot phonenumber-backend.core
   :target-path "target/%s"
