@@ -1,7 +1,8 @@
 (ns phonenumber-backend.core
+  (:require [phonenumber-backend.server :refer [create-donkey-server]]
+            [clojure.core :as c])
   (:gen-class))
 
 (defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!"))
+  []
+  (create-donkey-server))
