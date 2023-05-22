@@ -7,7 +7,6 @@ pom.xml.asc
 *.jar
 *.class
 /.lein-*
-/.nrepl-port
 /.prepl-port
 .hgignore
 .hg/
@@ -15,3 +14,4 @@ pom.xml.asc
 .clj-kondo/
 .lsp
 /.DS_Store
+.nrepl-port

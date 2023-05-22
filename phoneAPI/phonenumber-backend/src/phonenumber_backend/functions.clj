@@ -9,20 +9,7 @@
 (defn tadig-exists?
   [tadig]
   (let [tadigs (read-tadig @operator-mappings-db)]
-    (some #(contains? tadigs %) tadig)))
-
-;; READ functions
-(defn read-all-countries
-  "list all countries"
-  [operator-mappings-db]
-  (mapv :country @operator-mappings-db))
-
-(defn read-unique-countries
-  "List all unique Countries sorted alphabetically"
-  [operator-mappings-db]
-  (-> operator-mappings-db
-      read-all-countries
-      distinct))
+    (boolean (some #(contains? tadigs %) tadig))))
 
 (defn read-tadig-network-mappings
   "Create a map of tadigs to their network names, for every single tadig"
@@ -36,31 +23,50 @@
    {}
    @operator-mappings-db))
 
-(defn read-country-by-iso3
-  [iso3]
-  (->> @operator-mappings-db
-       (filter #(= (:iso3 %) (str/upper-case iso3)))))
+(defn read-all-countries
+  [operator-mappings-db]
+  (mapv :country @operator-mappings-db))
 
-(defn read-country-by-tadig
-  [tadig]
-  (->> @operator-mappings-db
+(defn unique-country-names
+  [operator-mappings-db]
+  (-> operator-mappings-db
+      read-all-countries
+      distinct))
+
+(defn read-string-field
+  [mapping-field-key field-value]
+  (let [field-value (str/upper-case field-value)]
+   (->> @operator-mappings-db
+       (filter #(= (str/upper-case (mapping-field-key %)) field-value)))))
+
+(defn read-nested-field
+  [mapping-field-key field-value]
+  (let [field-value (str/upper-case field-value)]
+    (->> @operator-mappings-db
        (filter (fn [operator-mapping]
-                 (some #(= (str/upper-case tadig )%) (:tadig operator-mapping))))))
+                 (some #(= (str/upper-case %) field-value)
+                       (mapping-field-key operator-mapping)))))))
 
-;;CREATE functions
-(defn new-country-operator
-  [new-country-operater-mapping]
-  (swap! operator-mappings-db conj new-country-operater-mapping))
+(defn read-mapping
+  [mapping-key mapping-value]
+  (if (some #(= mapping-key %) [:iso3 :iso2 :name :country])
+    (read-string-field mapping-key mapping-value)
+    (read-nested-field mapping-key mapping-value)))
 
-;DELETE functions
-(defn delete-country-by-tadig
+(defn create-operator-mapping
+  [new-mapping-operater-mapping]
+  (swap! operator-mappings-db conj new-mapping-operater-mapping))
+
+(defn delete-mapping-by-tadig
   [tadig]
   (swap! operator-mappings-db
-         (fn [atom]
-           (remove (some #(= tadig %) (:tadig atom)) atom))))
+        (fn [operator-mappings]
+         (remove (fn [operator-mapping]
+                   (some #(= tadig %)
+                         (:tadig operator-mapping)))
+                 operator-mappings))))
 
-; UPDATE functions
-(defn update-country
-  [incoming-operator-mapping existing-operator-mapping]
+(defn update-mapping
+  [existing-operator-mapping incoming-operator-mapping]
   (let [updated-operator-mapping (merge existing-operator-mapping incoming-operator-mapping)]
-    (swap! operator-mappings-db conj updated-operator-mapping)))
+    (swap! operator-mappings-db conj (first updated-operator-mapping))))

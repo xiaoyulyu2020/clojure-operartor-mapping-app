@@ -4,78 +4,56 @@
             [phonenumber-backend.functions :as fn])
   (:gen-class))
 
-;GET handler
-(defn home-handler
-  "home dir"
-  [_]
-  (let [body (db/operator-mappings)]
-      {:status 200
-       :body body}))
-
-(defn get-handler-all-countries
-  "GET: all-countries-collection"
-  [_]
-  (let [body (fn/read-all-countries db/operator-mappings-db)]
+(defn exception-response
+  [body]
+  (if (empty? body)
+    {:status 404
+     :body {:data "No result. Please check the correct detail was provided."}}
     {:status 200
-     :body body}))
+     :body {:data body}}))
 
-(defn get-handler-unique-countries
-  "GET: unique-countries-collection"
+(defn unique-country-names-handler
   [_]
-  (let [body (fn/read-unique-countries db/operator-mappings-db)]
-    {:status 200
-     :body body}))
+  (let [body (fn/unique-country-names db/operator-mappings-db)]
+    (exception-response body)))
 
-(defn get-handler-tadig-network-mappings
-  "GET: Create a map of tadigs to their network names, for every single tadig"
+(defn read-tadig-network-mappings
   [_]
   (let [body (fn/read-tadig-network-mappings db/operator-mappings-db)]
-    {:status 200
-     :body body}))
+    (exception-response body)))
 
-(defn get-handler-country-by-iso3
-  "GET: a country by parameter --- iso3"
-  [{{:keys [:id]} :path-params}]
-  (let [body (fn/read-country-by-iso3 (str id))]
-    {:status 200
-     :body body}))
+(defn get-handler
+  [request]
+  (let [{:keys [path-params]} request
+        {:keys [key id]} path-params
+        body (fn/read-mapping (keyword (str key)) id)]
+    (exception-response body)))
 
-(defn get-handler-country-by-tadig
-  "GET: a country by parameter --- tadig"
-  [{{:keys [:id]} :path-params}]
-  (let [body (fn/read-country-by-tadig (str id))]
-    {:status 200
-     :body body}))
-
-;PUT handler
-(defn new-operator-mappings
-  "Create a new operator mappings"
-  [{operator-mapping :body-params}]
+(defn create-operator-mapping
+   [{operator-mapping :body-params}]
   (let [incoming-tadigs (:tadig operator-mapping)]
     (if (fn/tadig-exists? incoming-tadigs)
-      {:status 404
-       :body "Tadigs are existing"}
-      (let [body (fn/new-country-operator operator-mapping)]
-        {:status 200
-         :body body}))))
+      {:status 403
+       :body (str incoming-tadigs " already exists, try another one please.")}
+      (let [body (fn/create-operator-mapping operator-mapping)]
+        (exception-response body)))))
 
-;DELETE handler
 (defn delete-handler-by-tadig
-  "Delete a mapping by tadig"
   [{{:keys [:id]} :path-params}]
-  (let [tadig (str/upper-case (str id))
-        body (fn/delete-country-by-tadig tadig)]
-    {:status 200
-     :body body}))
+  (let [tadig (str/upper-case (str id))]
+    (if (fn/tadig-exists? [tadig])
+      (do
+        (fn/delete-mapping-by-tadig tadig)
+        {:status 200
+         :body "Delete successfully."})
+      {:status 404
+       :body {:error (str "Tadig: " tadig " Does not exists in the Operator Mappings. Delete failed, Please check the correct detail was provided.")}})))
 
-;UPDATE handler
-(defn update-country-handler
+(defn update-mapping-handler
   [{incoming-operator-mapping :body-params {:keys [:id]} :path-params}]
-  (let [tadig (str id)
-        existing-operator-mapping (fn/read-country-by-tadig tadig)
-        body (if-not (nil? existing-operator-mapping)
-                  (do
-                    (fn/delete-country-by-tadig tadig)
-                    (fn/update-country incoming-operator-mapping existing-operator-mapping)))]
-    {:status 200
-     :body body}))
+  (let [tadig (str/upper-case (str id))
+        existing-mapping (atom (fn/read-mapping :tadig tadig))
+        body (when-not (nil? @existing-mapping)
+                (fn/delete-mapping-by-tadig tadig)
+                (fn/update-mapping  @existing-mapping incoming-operator-mapping))]
+    (exception-response body)))

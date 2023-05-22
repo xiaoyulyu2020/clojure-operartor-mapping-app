@@ -12,23 +12,19 @@
   (ring/ring-handler
    (ring/router
     ["/"
-     ["" h/home-handler]
-     ["get-all-countries"
-      {:get h/get-handler-all-countries}]
-     ["create-country"
-      {:post h/new-operator-mappings}]
-     ["get-unique-countries"
-      {:get h/get-handler-unique-countries}]
-     ["get-tadig-network-mappings"
-      {:get h/get-handler-tadig-network-mappings}]
-     ["get-country-iso3/:id"
-      {:get h/get-handler-country-by-iso3}]
-     ["get-country-tadig/:id"
-      {:get h/get-handler-country-by-tadig}]
-     ["delete-country-tadig/:id"
+     ["all-country-names"
+      {:get h/unique-country-names-handler}]
+     ["all-tadigs-networks"
+      {:get h/read-tadig-network-mappings}]
+     ["create-mapping"
+      {:post h/create-operator-mapping}]
+     ["delete/:id"
       {:delete h/delete-handler-by-tadig}]
-     ["update-country/:id"
-      {:put h/update-country-handler}]]
+     ["update/:id"
+      {:put h/update-mapping-handler}]
+     ["search/"
+      [":key/:id"
+       {:get h/get-handler}]]]
     {:data {:muuntaja m/instance
             :coercion rcs/coercion
             :middleware [muuntaja/format-negotiate-middleware
